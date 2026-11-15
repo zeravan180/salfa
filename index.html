@@ -264,15 +264,27 @@ const fixP=P=>{Object.values(P||{}).forEach(m=>{m.rows=m.rows||[];m.ifad=m.ifad|
 async function tok(){if(AUTH.id&&Date.now()<AUTH.exp-60000)return AUTH.id;
  const r=await fetch("https://securetoken.googleapis.com/v1/token?key="+CFG.apiKey,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(AUTH.rt)});
  const j=await r.json();if(!j.id_token)throw 0;AUTH.id=j.id_token;AUTH.rt=j.refresh_token;AUTH.exp=Date.now()+(+j.expires_in)*1000;localStorage.setItem("salfa-auth",JSON.stringify(AUTH));return AUTH.id}
+// several managers can work at once: only the rows/fields that changed are sent, so one manager never overwrites another's work
+let BASE=null,synced=false;
+const cl=o=>JSON.parse(JSON.stringify(o));
+function diff(b,c){const o={};const J=JSON.stringify;
+ Object.keys({...b,...c}).forEach(k=>{const x=b[k],y=c[k];
+  if(!y){o[k]=null;return}if(!x){o[k]=y;return}
+  ["total","szb"].forEach(f=>{if(J(x[f])!==J(y[f]))o[k+"/"+f]=y[f]==null?null:y[f]});
+  ["rows","ifad","sz"].forEach(L=>{const a=x[L]||[],d=y[L]||[];
+   if(a.length!==d.length){o[k+"/"+L]=d.length?d:null;return}
+   d.forEach((r,i)=>{if(J(a[i])!==J(r))o[k+"/"+L+"/"+i]=r})})});
+ return o}
 async function push(){if(!isAdm()||pushing)return;pushing=true;
- try{const body=JSON.stringify(S.P),r=await fetch(CFG.db+"/salfa/P.json?auth="+await tok(),{method:"PUT",headers:{"Content-Type":"application/json"},body});
-  if(!r.ok)throw 0;lastRemote=JSON.stringify(fixP(await r.json()));lastPush=hs(body);dirtyC=hs(JSON.stringify(S.P))!==lastPush;cloudBar()}
+ try{const now=cl(S.P),first=!BASE,body=JSON.stringify(first?now:diff(BASE,now));
+  if(body!=="{}"){const r=await fetch(CFG.db+"/salfa/P.json?auth="+await tok(),{method:first?"PUT":"PATCH",headers:{"Content-Type":"application/json"},body});if(!r.ok)throw 0}
+  BASE=now;lastPush=hs(JSON.stringify(now));lastRemote="";dirtyC=hs(JSON.stringify(S.P))!==lastPush;cloudBar();if(!dirtyC)setTimeout(pull,300)}
  catch(e){dirtyC=true;toast(t("syncno"));clearTimeout(pushT);pushT=setTimeout(push,8000)}finally{pushing=false}}
-function queuePush(){if(!isAdm()||!S.P)return;const hv=hs(JSON.stringify(S.P));if(hv===lastPush)return;dirtyC=true;clearTimeout(pushT);pushT=setTimeout(push,800)}
+function queuePush(){if(!isAdm()||!S.P||!synced)return;const hv=hs(JSON.stringify(S.P));if(hv===lastPush)return;dirtyC=true;clearTimeout(pushT);pushT=setTimeout(push,800)}
 async function pull(){if(!CLOUD||pushing||dirtyC)return;
- try{const r=await fetch(CFG.db+"/salfa/P.json",{cache:"no-store"});if(!r.ok)return;const j=await r.json();
-  if(j===null){if(isAdm()&&S.P)push();return}
-  const s=JSON.stringify(fixP(j));if(s===lastRemote||dirtyC)return;lastRemote=s;S.P=JSON.parse(s);lastPush=hs(JSON.stringify(S.P));
+ try{const r=await fetch(CFG.db+"/salfa/P.json",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const was=synced;synced=true;
+  if(j===null){if(isAdm()&&S.P){BASE=null;push()}return}
+  const s=JSON.stringify(fixP(j));if(s===lastRemote||(dirtyC&&was))return;dirtyC=false;lastRemote=s;S.P=JSON.parse(s);BASE=JSON.parse(s);lastPush=hs(JSON.stringify(S.P));
   if(!S.P[S.cur]){const ks=Object.keys(S.P).sort();if(ks.length&&!isAdm())S.cur=ks[ks.length-1]}
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   if(typeof render==="function"&&$("list")&&!document.activeElement.matches("input")){ti.value=f(M().total);ti.disabled=!has();picker();render()}}catch(e){}}
@@ -497,7 +509,7 @@ $("admf").addEventListener("submit",async e=>{e.preventDefault();
  try{const r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+CFG.apiKey,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:$("ae").value.trim(),password:$("ap").value,returnSecureToken:true})});
   const j=await r.json();if(!j.idToken){const m=(j.error&&j.error.message)||"";if(/API.?KEY/i.test(m)){toast("⚠ API key: "+m);return}throw 0}
   AUTH={email:j.email,id:j.idToken,rt:j.refreshToken,exp:Date.now()+(+j.expiresIn)*1000};localStorage.setItem("salfa-auth",JSON.stringify(AUTH));
-  $("ap").value="";$("admf").hidden=true;close();cloudBar();toast(t("lok"));dirtyC=false;await pull();render()}catch(err){toast(t("lbad"))}});
+  $("ap").value="";$("admf").hidden=true;close();cloudBar();toast(t("lok"));dirtyC=false;synced=false;lastRemote="";await pull();render()}catch(err){toast(t("lbad"))}});
 if(CLOUD){cloudBar();pull();setInterval(()=>{if(!document.hidden)pull()},5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()})}
 ti.disabled=!has();applyLang();picker();render();if(got)setTimeout(()=>toast(t("impok")),300);
 }
