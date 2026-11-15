@@ -184,7 +184,7 @@ body.ro #sv,body.ro #add,body.ro #ed,body.ro #dl,body.ro #all,body.ro #undo,body
 .urow span{direction:ltr;overflow-wrap:anywhere}.urow i{font-style:normal;font-size:12px;border-radius:8px;padding:2px 8px;background:var(--bg);white-space:nowrap}
 .urow i.a{background:var(--acc);color:#fff}.urow button{min-height:36px;font-size:13px}
 .uchk{display:flex;align-items:center;gap:8px;font-size:14px}.uchk input{width:20px;height:20px}
-body.cloud #sv,body.cloud #fsn,body.cloud #exp,body.cloud .imp{display:none!important}
+body.oncl #sv,body.oncl #fsn,body.oncl #exp,body.oncl .imp{display:none!important}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--band);color:#fff;padding:10px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
 .toast.on{opacity:1}
 .note{font-size:13px;color:var(--mute);margin-top:12px}
@@ -654,7 +654,7 @@ function repHTML(){
 $("rgo").addEventListener("click",async()=>{$("rep").innerHTML=repHTML();try{await document.fonts.load('600 13px "Noto Sans Arabic"');await document.fonts.ready}catch(e){}rov.hidden=true;const old=document.title;
  document.title=(rk==="d"?"report-day-"+$("rday").value:rk==="m"?"report-month-"+S.cur:"report-year-"+ym()[0]);
  setTimeout(()=>{try{window.print()}catch(e){toast("⚠ print")}setTimeout(()=>document.title=old,1500)},200)});
-if(CLOUD){document.body.classList.add("cloud");cloudBar();if(!isIn())showGate();else loadRole().then(()=>{cloudBar();render()}).catch(()=>{});pull();setInterval(()=>{if(!document.hidden)pull()},5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()})}
+if(CLOUD){document.body.classList.add("oncl");cloudBar();if(!isIn())showGate();else loadRole().then(()=>{cloudBar();render()}).catch(()=>{});pull();setInterval(()=>{if(!document.hidden)pull()},5000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()})}
 ti.disabled=!has();applyLang();picker();render();if(got)setTimeout(()=>toast(t("impok")),300);
 }
 </script>
