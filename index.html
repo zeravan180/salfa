@@ -751,7 +751,7 @@ function repSpec(){
   KIND.forEach(([Lk,lab])=>{const a=m[Lk]||[];if(!a.length)return;
    sp.secs.push({h:t(lab==="cdep"?"cdepm":lab==="cif"?"hi":lab==="csz"?"vs":lab),head:[t("cno"),t("cname"),t("camt"),t("cst"),t("cat")],w:[.07,.47,.17,.09,.2],num:[0,0,1,0,1],
     rows:a.map((r,i)=>[String(i+1),L(r)+(r.parts?" ("+r.parts.map(x=>L(x)+": "+f(x.amt)).join(" + ")+")":""),f(r.amt),r.sent?"✓":"—",r.at?dd(r.at)+" "+tt2(r.at):""]),
-    tot:[t("ctotal"),"",f(sum(a)),"",t("csent")+": "+f(sum(a.filter(r=>r.sent)))]})});
+    tot:[t("ctotal"),t("csent")+": "+f(sum(a.filter(r=>r.sent))),f(sum(a)),"",""]})});
   const ds=sum(m.rows),zb=m.szb||0,ib=m.total-ds-zb,sent=sum(m.rows.concat(m.ifad,m.sz).filter(r=>r.sent));
   sp.sum=[[t("hsum"),ib],[t("cdepm"),ds],[t("sz2"),zb],[t("ctot"),m.total],[t("sent2"),sent],[t("rem2"),m.total-sent]]}
  else{const y=ym()[0];sp.title=t("rty");sp.per=String(y);const tot=[0,0,0,0,0,0],rows=[];
